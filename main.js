@@ -173,8 +173,8 @@ Chip8.prototype.cycle = function() {
             break;
 
         case 0xC:
-            this.v[x] = (Math.random() * 4) | n[1]
-
+            this.v[x] = (Math.random() * 4) | n[1];
+            break;
 
         default:
             console.log("Incorrect opcode.") // this shouldn't happen when all opcodes are implemented
