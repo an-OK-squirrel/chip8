@@ -8,7 +8,7 @@ function toHex(number, digits) {
 
 function Chip8() {
     this.memory = new Uint8Array(4096); // General RAM
-    this.registers = new Uint8Array(8); // registers
+    this.v = new Uint8Array(8); // registers
     this.reset();
 }
 
@@ -19,7 +19,7 @@ Chip8.prototype.reset = function() {
     this.soundTimer = 0;
     this.indexRegister = 0;
     this.memory.fill(0);
-    this.registers.fill(0)
+    this.v.fill(0)
 
     this.stack = [];
 }
@@ -29,7 +29,7 @@ Chip8.prototype.loadProgram = function(program) { // program is Uint8array
 }
 
 Chip8.prototype.debug = function() {
-    console.log("V Registers: ", this.registers.map(e => toHex(e, 2)));
+    console.log("V Registers: ", this.v.map(e => toHex(e, 2)));
     console.log("Index Register:", toHex(this.indexRegister, 4));
     console.log("PC: ", toHex(this.programCounter, 3));
     console.log("Bytes at PC:", toHex((this.memory[this.programCounter] << 8) + this.memory[this.programCounter + 1], 4))
@@ -37,7 +37,8 @@ Chip8.prototype.debug = function() {
 
 Chip8.prototype.debugDOM = function () {
 
-    document.getElementById("vregs").innerHTML = "V Registers: " + this.registers.map(e=>e.toString(16)).join(" ");
+    // since map keeps the TypeArray, take this really crappy workaround!
+    document.getElementById("vregs").innerHTML = "V Registers: " + this.v.join(" ").split(" ").map(e => toHex(parseInt(e, 10), 2)).join(" ");
     document.getElementById("pc").innerHTML = "Program Counter: " + this.programCounter.toString(16);
     document.getElementById("ireg").innerHTML = "Index Register: " + this.indexRegister.toString(16);
 
@@ -51,12 +52,12 @@ Chip8.prototype.cycle = function() {
     var y = (opcode & 0x00f0) >> 4
     var n = [opcode & 0x000f, opcode & 0x00ff, opcode & 0x0fff]; // constants always end the opcode
 
-    console.log(opcode, x, y)
-
-    switch ((opcode & 0xf000) >> 12) {
+    console.log(opcode, x, y);
+    console.log(Math.floor((opcode & 0xf000) >> 12), n);
+    switch (Math.floor((opcode & 0xf000) >> 12)) {
         case 0:
             // TODO: Graphics opcodes
-            switch opcode {
+            switch (opcode) {
                 case 0x00ee:
                     this.programCounter = this.stack.pop();
                     break;
@@ -100,7 +101,7 @@ Chip8.prototype.cycle = function() {
             break;
 
         case 8:
-            switch n[0] {
+            switch (n[0]) {
                 case 0: //
                     this.v[x] = this.v[y];
                     break;
@@ -173,7 +174,7 @@ Chip8.prototype.cycle = function() {
             break;
 
         case 0xC:
-            this.v[x] = (Math.random() * 4) | n[1];
+            this.v[x] = (Math.random() * 256) & n[1];
             break;
 
         default:
@@ -184,7 +185,9 @@ Chip8.prototype.cycle = function() {
 }
 
 var test = new Chip8();
-test.loadProgram([0x05, 0x36]);
+test.loadProgram([0xc0, 0xff, 0xc1, 0xff, 0xc2, 0xff]);
+test.cycle();
+test.cycle();
+test.cycle();
 test.debug();
 test.debugDOM();
-test.cycle();
