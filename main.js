@@ -55,10 +55,21 @@ Chip8.prototype.cycle = function() {
 
     switch ((opcode & 0xf000) >> 12) {
         case 0:
-            // TODO: 0--- opcodes
+            // TODO: Graphics opcodes
+            switch opcode {
+                case 0x00ee:
+                    this.programCounter = this.stack.pop();
+                    break;
+
+            }
             break;
 
         case 1:
+            this.programCounter = n[2];
+            break;
+
+        case 2:
+            this.stack.push(this.programCounter);
             this.programCounter = n[2];
             break;
 
@@ -152,6 +163,18 @@ Chip8.prototype.cycle = function() {
                 this.programCounter += 2;
             }
             break;
+
+        case 0xA:
+            this.indexRegister = n[2];
+            break;
+
+        case 0xB:
+            this.programCounter = n[2] + v[0];
+            break;
+
+        case 0xC:
+            this.v[x] = (Math.random() * 4) | n[1]
+
 
         default:
             console.log("Incorrect opcode.") // this shouldn't happen when all opcodes are implemented
