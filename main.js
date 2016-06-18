@@ -46,12 +46,113 @@ Chip8.prototype.debugDOM = function () {
 Chip8.prototype.cycle = function() {
 
     // read opcode
-    var opcode = this.memory[this.programCounter] << 8 + this.memory[this.programCounter + 1];
+    var opcode = (this.memory[this.programCounter] << 8) + this.memory[this.programCounter + 1];
+    var x = (opcode & 0x0f00) >> 8
+    var y = (opcode & 0x00f0) >> 4
+    var n = [opcode & 0x000f, opcode & 0x00ff, opcode & 0x0fff]; // constants always end the opcode
 
-    switch (opcode & 0xf000 >> 12) {
+    console.log(opcode, x, y)
+
+    switch ((opcode & 0xf000) >> 12) {
         case 0:
-            console.log("memes", opcode);
+            // TODO: 0--- opcodes
             break;
+
+        case 1:
+            this.programCounter = n[2];
+            break;
+
+        case 3:
+            if (this.v[x] == n[1]) {
+                this.programCounter += 2;
+            }
+            break;
+
+        case 4:
+            if (this.v[x] != n[1]) {
+                this.programCounter += 2;
+            }
+            break;
+
+        case 5:
+            if (this.v[x] == this.v[y]) {
+                this.programCounter += 2;
+            }
+            break;
+
+        case 6:
+            this.v[x] = n[1];
+            break;
+
+        case 7:
+            this.v[x] += n[1];
+            break;
+
+        case 8:
+            switch n[0] {
+                case 0: //
+                    this.v[x] = this.v[y];
+                    break;
+
+                case 1:
+                    this.v[x] |= this.v[y];
+                    break;
+
+                case 2:
+                    this.v[x] &= this.v[y];
+                    break;
+
+                case 3:
+                    this.v[x] ^= this.v[y];
+                    break;
+
+                case 4:
+                    if (this.v[x] + this.v[y] > 256) {
+                        this.v[15] = 1;
+                    } else {
+                        this.v[15] = 0
+                    }
+
+                    this.v[x] += this.v[y];
+                    break;
+
+                case 5:
+                    if (this.v[x] - this.v[y] < 0) {
+                        this.v[15] = 0;
+                    } else {
+                        this.v[15] = 1;
+                    }
+                    this.v[x] -= this.v[y];
+                    break;
+
+                case 6:
+                    this.v[15] = this.v[x] & 1;
+                    this.v[x] = this.v[x] >> 1;
+                    break;
+
+                case 7:
+                    if (this.v[y] - this.v[x] < 0) {
+                        this.v[15] = 0;
+                    } else {
+                        this.v[15] = 1;
+                    }
+                    this.v[x] = this.v[y] - this.v[x];
+                    break;
+
+                case 14:
+                    this.v[15] = this.v[x] & 0x8000 >> 15;
+                    this.v[x] = this.v[x] << 1;
+                    break;
+
+            }
+            break;
+
+        case 9:
+            if (this.v[x] != this.v[y]) {
+                this.programCounter += 2;
+            }
+            break;
+
         default:
             console.log("Incorrect opcode.") // this shouldn't happen when all opcodes are implemented
     }
@@ -60,6 +161,7 @@ Chip8.prototype.cycle = function() {
 }
 
 var test = new Chip8();
-test.loadProgram([0xa5, 0x36]);
+test.loadProgram([0x05, 0x36]);
 test.debug();
 test.debugDOM();
+test.cycle();
