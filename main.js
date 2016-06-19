@@ -8,7 +8,8 @@ function toHex(number, digits) {
 
 function Chip8(id) {
     this.memory = new Uint8Array(4096); // General RAM
-    this.v = new Uint8Array(8); // registers
+    this.v = new Uint8Array(16); // registers
+    this.display = new Array(64 * 32);
     this.initCanvas(id);
     this.reset();
 }
@@ -25,6 +26,7 @@ Chip8.prototype.reset = function() {
     this.stack = [];
 
     this.clearDisplay();
+    this.display.fill(false);
 }
 
 Chip8.prototype.loadProgram = function(program) { // program is Uint8array
@@ -61,6 +63,10 @@ Chip8.prototype.cycle = function() {
         case 0:
             // TODO: Graphics opcodes
             switch (opcode) {
+                case 0x00e0:
+                    this.clearDisplay;
+                    break;
+
                 case 0x00ee:
                     this.programCounter = this.stack.pop();
                     break;
@@ -180,6 +186,28 @@ Chip8.prototype.cycle = function() {
             this.v[x] = (Math.random() * 256) & n[1];
             break;
 
+        case 0xD: // draw a sprite at X,Y with N width and starting at I
+            console.log("sprite", x, y, n[0], this.indexRegister);
+            for (i = x; i < x + 8; i++) {
+                for (j = y; j < y + n[0]; j++) {
+                    var displayIndex = i + j * 64;
+                    // WARNING: UGLY CODE AHEAD
+                    // BECAUSE XOR USES NUMBERS
+                    this.display[displayIndex] = [false, true][
+                        // XOR GRAPHICS
+                        this.display[displayIndex] ^
+                            // GET BYTE
+                            (this.memory[j - y + this.indexRegister] >>
+                                // GET BIT
+                                (i - x) & 1)
+                        ]; // he's crying because the code is ugly
+
+                }
+            }
+
+            this.updateDisplay(x, y, 8, n[0]);
+            break;
+
         default:
             console.log("Incorrect opcode.") // this shouldn't happen when all opcodes are implemented
     }
@@ -195,13 +223,31 @@ Chip8.prototype.initCanvas = function(id) {
 }
 
 Chip8.prototype.clearDisplay = function() {
+    this.display.fill(false);
+
     this.ctx.fillStyle = "black";
     this.ctx.fillRect(0, 0, this.displayWidth, this.displayHeight);
 }
 
+Chip8.prototype.updateDisplay = function(x, y, width, height) {
+    for (i = x; i < x + width; i++) { // loop over x in rectangle
+        for (var j = y; j < height; j++) { // same with y
+
+            var displayIndex = i + j * 64; // screen is 64 wide, too lazy for 2d arrays
+
+            if (this.display[displayIndex]) {
+                this.ctx.fillStyle = "white";
+            } else {
+                this.ctx.fillStyle = "black";
+            }
+
+            this.ctx.fillRect(i * 10, j * 10, 10, 10);
+        }
+    }
+}
+
 var test = new Chip8("display");
-test.loadProgram([0xc0, 0xff, 0xc1, 0xff, 0xc2, 0xff]);
-test.cycle();
+test.loadProgram([0xa2, 0x00, 0xd0, 0x05, 0xff]);
 test.cycle();
 test.cycle();
 test.debug();
