@@ -193,7 +193,6 @@ Chip8.prototype.cycle = function() {
             break;
 
         case 0xD: // draw a sprite at X,Y with N width and starting at I
-            console.log("sprite", this.v[x], this.v[y], n[0], this.indexRegister);
             for (i = this.v[x]; i < this.v[x] + 8; i++) {
                 for (j = this.v[y]; j < this.v[y] + n[0]; j++) {
                     var displayIndex = i + j * 64;
