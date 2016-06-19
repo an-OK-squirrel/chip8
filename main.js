@@ -9,7 +9,7 @@ function toHex(number, digits) {
 function Chip8(id) {
     this.memory = new Uint8Array(4096); // General RAM
     this.v = new Uint8Array(16); // registers
-    this.display = new Array(64 * 32);
+    this.display = new Uint8Array(64 * 32);
     this.initCanvas(id);
     this.reset();
 }
@@ -26,7 +26,7 @@ Chip8.prototype.reset = function() {
     this.stack = [];
 
     this.clearDisplay();
-    this.display.fill(false);
+    this.display.fill(0);
 
     this.prevTime = Date.now();
 }
@@ -195,10 +195,9 @@ Chip8.prototype.cycle = function() {
         case 0xD: // draw a sprite at X,Y with N width and starting at I
             for (i = this.v[x]; i < this.v[x] + 8; i++) {
                 for (j = this.v[y]; j < this.v[y] + n[0]; j++) {
-                    var displayIndex = i + j * 64;
+                    var displayIndex = (i % 64) + (j % 32) * 64;
                     // WARNING: UGLY CODE AHEAD
-                    // BECAUSE XOR USES NUMBERS
-                    this.display[displayIndex] = [false, true][
+                    this.display[displayIndex] = [
                         // XOR GRAPHICS
                         this.display[displayIndex] ^
                             // GET BYTE
@@ -210,7 +209,7 @@ Chip8.prototype.cycle = function() {
                 }
             }
 
-            this.updateDisplay(this.v[x], this.v[y], 8, n[0]);
+            this.updateDisplay(this.v[x] % 64, this.v[y] % 32, 8, n[0]);
             break;
 
         default:
@@ -254,7 +253,7 @@ Chip8.prototype.updateDisplay = function(x, y, width, height) {;
     for (i = x; i < x + width; i++) { // loop over x in rectangle
         for (var j = y; j < y + height; j++) { // same with y
 
-            var displayIndex = i + j * 64; // screen is 64 wide, too lazy for 2d arrays
+            var displayIndex = (i % 64) + (j % 32) * 64; // screen is 64 wide, too lazy for 2d arrays
 
             if (this.display[displayIndex]) {
                 this.ctx.fillStyle = "white";
@@ -267,19 +266,18 @@ Chip8.prototype.updateDisplay = function(x, y, width, height) {;
     }
 }
 
-function memes() {
-    window.requestAnimationFrame(memes)
+function loop() {
+    window.requestAnimationFrame(loop);
     test.cycle();
     test.debugDOM();
 }
 
 var test = new Chip8("display");
 test.loadProgram([0x60,0x00,
-    0x61,0x01,
     0xA2,0x0C,
     0x80,0x14,
-    0xD0,0x04,
-    0x12,0x04,
-    0xE7,0x81,
-    0x81,0xFF]);
+    0x61,0x01,
+    0xD0,0x01,
+    0x12,0x02,
+    0x11]);
 memes()
