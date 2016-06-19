@@ -6,9 +6,10 @@ function toHex(number, digits) {
     return leftPad(number.toString(16), "0".repeat(digits))
 }
 
-function Chip8() {
+function Chip8(id) {
     this.memory = new Uint8Array(4096); // General RAM
     this.v = new Uint8Array(8); // registers
+    this.initCanvas(id);
     this.reset();
 }
 
@@ -22,6 +23,8 @@ Chip8.prototype.reset = function() {
     this.v.fill(0)
 
     this.stack = [];
+
+    this.clearDisplay();
 }
 
 Chip8.prototype.loadProgram = function(program) { // program is Uint8array
@@ -184,7 +187,19 @@ Chip8.prototype.cycle = function() {
     this.programCounter += 2; // move onto next
 }
 
-var test = new Chip8();
+Chip8.prototype.initCanvas = function(id) {
+    var canvas = document.getElementById(id);
+    this.ctx = canvas.getContext("2d");
+    this.displayWidth = canvas.width;
+    this.displayHeight = canvas.height;
+}
+
+Chip8.prototype.clearDisplay = function() {
+    this.ctx.fillStyle = "black";
+    this.ctx.fillRect(0, 0, this.displayWidth, this.displayHeight);
+}
+
+var test = new Chip8("display");
 test.loadProgram([0xc0, 0xff, 0xc1, 0xff, 0xc2, 0xff]);
 test.cycle();
 test.cycle();
