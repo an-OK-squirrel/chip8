@@ -27,6 +27,8 @@ Chip8.prototype.reset = function() {
 
     this.clearDisplay();
     this.display.fill(false);
+
+    this.prevTime = Date.now();
 }
 
 Chip8.prototype.loadProgram = function(program) { // program is Uint8array
@@ -46,10 +48,14 @@ Chip8.prototype.debugDOM = function () {
     document.getElementById("vregs").innerHTML = "V Registers: " + this.v.join(" ").split(" ").map(e => toHex(parseInt(e, 10), 2)).join(" ");
     document.getElementById("pc").innerHTML = "Program Counter: " + this.programCounter.toString(16);
     document.getElementById("ireg").innerHTML = "Index Register: " + this.indexRegister.toString(16);
+    document.getElementById("dt").innerHTML = "Delay Timer: " + this.delayTimer;
+    document.getElementById("st").innerHTML = "Sound Timer: " + this.soundTimer;
 
 }
 
 Chip8.prototype.cycle = function() {
+
+    this.updateTimers();
 
     // read opcode
     var opcode = (this.memory[this.programCounter] << 8) + this.memory[this.programCounter + 1];
@@ -57,8 +63,8 @@ Chip8.prototype.cycle = function() {
     var y = (opcode & 0x00f0) >> 4
     var n = [opcode & 0x000f, opcode & 0x00ff, opcode & 0x0fff]; // constants always end the opcode
 
-    console.log(opcode, x, y);
-    console.log(Math.floor((opcode & 0xf000) >> 12), n);
+    // console.log(opcode, x, y);
+    // console.log(Math.floor((opcode & 0xf000) >> 12), n);
     switch (Math.floor((opcode & 0xf000) >> 12)) {
         case 0:
             // TODO: Graphics opcodes
@@ -187,9 +193,9 @@ Chip8.prototype.cycle = function() {
             break;
 
         case 0xD: // draw a sprite at X,Y with N width and starting at I
-            console.log("sprite", x, y, n[0], this.indexRegister);
-            for (i = x; i < x + 8; i++) {
-                for (j = y; j < y + n[0]; j++) {
+            console.log("sprite", this.v[x], this.v[y], n[0], this.indexRegister);
+            for (i = this.v[x]; i < this.v[x] + 8; i++) {
+                for (j = this.v[y]; j < this.v[y] + n[0]; j++) {
                     var displayIndex = i + j * 64;
                     // WARNING: UGLY CODE AHEAD
                     // BECAUSE XOR USES NUMBERS
@@ -197,15 +203,15 @@ Chip8.prototype.cycle = function() {
                         // XOR GRAPHICS
                         this.display[displayIndex] ^
                             // GET BYTE
-                            (this.memory[j - y + this.indexRegister] >>
+                            (this.memory[j - this.v[y] + this.indexRegister] >>
                                 // GET BIT
-                                (i - x) & 1)
+                                (i - this.v[x]) & 1)
                         ]; // he's crying because the code is ugly
 
                 }
             }
 
-            this.updateDisplay(x, y, 8, n[0]);
+            this.updateDisplay(this.v[x], this.v[y], 8, n[0]);
             break;
 
         default:
@@ -213,6 +219,22 @@ Chip8.prototype.cycle = function() {
     }
 
     this.programCounter += 2; // move onto next
+}
+
+Chip8.prototype.updateTimers = function() {
+    var newTime = Date.now();
+
+    var difference = Math.floor(((newTime - this.prevTime) / 1000) * 60);
+
+    this.delayTimer -= difference;
+    this.soundTimer -= difference;
+
+    this.delayTimer = Math.max(0, this.delayTimer);
+    this.soundTimer = Math.max(0, this.soundTimer);
+
+    if (this.delayTimer > 0) {console.log(newTime);}
+
+    this.prevTime = newTime;
 }
 
 Chip8.prototype.initCanvas = function(id) {
@@ -229,9 +251,9 @@ Chip8.prototype.clearDisplay = function() {
     this.ctx.fillRect(0, 0, this.displayWidth, this.displayHeight);
 }
 
-Chip8.prototype.updateDisplay = function(x, y, width, height) {
+Chip8.prototype.updateDisplay = function(x, y, width, height) {;
     for (i = x; i < x + width; i++) { // loop over x in rectangle
-        for (var j = y; j < height; j++) { // same with y
+        for (var j = y; j < y + height; j++) { // same with y
 
             var displayIndex = i + j * 64; // screen is 64 wide, too lazy for 2d arrays
 
@@ -246,9 +268,19 @@ Chip8.prototype.updateDisplay = function(x, y, width, height) {
     }
 }
 
+function memes() {
+    window.requestAnimationFrame(memes)
+    test.cycle();
+    test.debugDOM();
+}
+
 var test = new Chip8("display");
-test.loadProgram([0xa2, 0x00, 0xd0, 0x05, 0xff]);
-test.cycle();
-test.cycle();
-test.debug();
-test.debugDOM();
+test.loadProgram([0x60,0x00,
+    0x61,0x01,
+    0xA2,0x0C,
+    0x80,0x14,
+    0xD0,0x04,
+    0x12,0x04,
+    0xE7,0x81,
+    0x81,0xFF]);
+memes()
