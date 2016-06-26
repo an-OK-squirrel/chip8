@@ -10,7 +10,7 @@ function Chip8(id) {
     this.memory = new Uint8Array(4096); // General RAM
     this.v = new Uint8Array(16); // registers
     this.display = new Uint8Array(64 * 32);
-    this.initCanvas(id);
+    // this.initCanvas(id);
     this.reset();
 }
 
@@ -40,17 +40,6 @@ Chip8.prototype.debug = function() {
     console.log("Index Register:", toHex(this.indexRegister, 4));
     console.log("PC: ", toHex(this.programCounter, 3));
     console.log("Bytes at PC:", toHex((this.memory[this.programCounter] << 8) + this.memory[this.programCounter + 1], 4))
-}
-
-Chip8.prototype.debugDOM = function () {
-
-    // since map keeps the TypeArray, take this really crappy workaround!
-    document.getElementById("vregs").innerHTML = "V Registers: " + this.v.join(" ").split(" ").map(e => toHex(parseInt(e, 10), 2)).join(" ");
-    document.getElementById("pc").innerHTML = "Program Counter: " + this.programCounter.toString(16);
-    document.getElementById("ireg").innerHTML = "Index Register: " + this.indexRegister.toString(16);
-    document.getElementById("dt").innerHTML = "Delay Timer: " + this.delayTimer;
-    document.getElementById("st").innerHTML = "Sound Timer: " + this.soundTimer;
-
 }
 
 Chip8.prototype.cycle = function() {
@@ -209,7 +198,7 @@ Chip8.prototype.cycle = function() {
                 }
             }
 
-            this.updateDisplay(this.v[x] % 64, this.v[y] % 32, 8, n[0]);
+            // this.updateDisplay(this.v[x] % 64, this.v[y] % 32, 8, n[0]);
             break;
 
         default:
@@ -235,49 +224,48 @@ Chip8.prototype.updateTimers = function() {
     this.prevTime = newTime;
 }
 
-Chip8.prototype.initCanvas = function(id) {
-    var canvas = document.getElementById(id);
-    this.ctx = canvas.getContext("2d");
-    this.displayWidth = canvas.width;
-    this.displayHeight = canvas.height;
-}
+// Chip8.prototype.initCanvas = function(id) {
+//     var canvas = document.getElementById(id);
+//     this.ctx = canvas.getContext("2d");
+//     this.displayWidth = canvas.width;
+//     this.displayHeight = canvas.height;
+// }
 
 Chip8.prototype.clearDisplay = function() {
     this.display.fill(false);
-
-    this.ctx.fillStyle = "black";
-    this.ctx.fillRect(0, 0, this.displayWidth, this.displayHeight);
 }
 
-Chip8.prototype.updateDisplay = function(x, y, width, height) {;
-    for (i = x; i < x + width; i++) { // loop over x in rectangle
-        for (var j = y; j < y + height; j++) { // same with y
+// Unrelated to actual chip 8 now, more so sending worker stuff
 
-            var displayIndex = (i % 64) + (j % 32) * 64; // screen is 64 wide, too lazy for 2d arrays
+var looping = false;
+var loopInterval;
 
-            if (this.display[displayIndex]) {
-                this.ctx.fillStyle = "white";
-            } else {
-                this.ctx.fillStyle = "black";
-            }
+function loop() {
+    chip8.cycle()
+}
 
-            this.ctx.fillRect(i * 10, j * 10, 10, 10);
-        }
+function sendDebug() {
+    postMessage(["debug", chip8.v]);
+}
+
+onmessage = function(event) { // expects array [command, args...]
+    switch (event.data[0]) {
+        case "startLoop":
+            looping = true;
+            loopInterval = setInterval(loop, 1);
+            break;
+
+        case "stopLoop":
+            looping = false;
+            break;
+
+        case "step":
+            chip8.cycle();
+            break;
+
+        case "debug":
+            sendDebug();
     }
 }
 
-function loop() {
-    window.requestAnimationFrame(loop);
-    test.cycle();
-    test.debugDOM();
-}
-
-var test = new Chip8("display");
-test.loadProgram([0x60,0x00,
-    0xA2,0x0C,
-    0x80,0x14,
-    0x61,0x01,
-    0xD0,0x01,
-    0x12,0x02,
-    0x11]);
-loop();
+var chip8 = new Chip8();
