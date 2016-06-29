@@ -12,9 +12,11 @@ function debugDOM() {
 var chip8 = new Worker("chip8.js");
 
 chip8.onmessage = function(e) {
+
+    if (e.data[0] == "ready") {
+        chip8.postMessage(["startLoop"]);
+        chip8.postMessage(["debug"]);
+    }
     console.log('Message received from main script');
     console.log(e.data)
 }
-
-chip8.postMessage(["startLoop"]);
-chip8.postMessage(["debug"]);

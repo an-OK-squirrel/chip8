@@ -6,7 +6,7 @@ function toHex(number, digits) {
     return leftPad(number.toString(16), "0".repeat(digits))
 }
 
-function Chip8(id) {
+function Chip8() {
     this.memory = new Uint8Array(4096); // General RAM
     this.v = new Uint8Array(16); // registers
     this.display = new Uint8Array(64 * 32);
@@ -25,7 +25,6 @@ Chip8.prototype.reset = function() {
 
     this.stack = [];
 
-    this.clearDisplay();
     this.display.fill(0);
 
     this.prevTime = Date.now();
@@ -199,6 +198,7 @@ Chip8.prototype.cycle = function() {
             }
 
             // this.updateDisplay(this.v[x] % 64, this.v[y] % 32, 8, n[0]);
+            sendDisplay();
             break;
 
         default:
@@ -233,6 +233,7 @@ Chip8.prototype.updateTimers = function() {
 
 Chip8.prototype.clearDisplay = function() {
     this.display.fill(false);
+    sendDisplay();
 }
 
 // Unrelated to actual chip 8 now, more so sending worker stuff
@@ -240,12 +241,19 @@ Chip8.prototype.clearDisplay = function() {
 var looping = false;
 var loopInterval;
 
+var chip8 = new Chip8();
+
 function loop() {
-    chip8.cycle()
+    chip8.cycle();
+    console.log("hi");
 }
 
 function sendDebug() {
     postMessage(["debug", chip8.v]);
+}
+
+function sendDisplay() {
+    postMessage([["display"], chip8.display]);
 }
 
 onmessage = function(event) { // expects array [command, args...]
@@ -268,4 +276,4 @@ onmessage = function(event) { // expects array [command, args...]
     }
 }
 
-var chip8 = new Chip8();
+postMessage(["ready"]);
