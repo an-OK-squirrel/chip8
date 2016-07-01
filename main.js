@@ -13,9 +13,17 @@ var chip8 = new Worker("chip8.js");
 
 chip8.onmessage = function(e) {
 
-    if (e.data[0] == "ready") {
-        chip8.postMessage(["startLoop"]);
-        chip8.postMessage(["debug"]);
+    switch (e.data[0]) {
+        case "debug":
+            console.log("debug", e.data[1]);
+            break;
+
+        case "display":
+            console.log("display");
+            break;
+
+        case "ready":
+            chip8.postMessage(["startLoop"]);
     }
     console.log('Message received from main script');
     console.log(e.data)

@@ -242,10 +242,10 @@ var looping = false;
 var loopInterval;
 
 var chip8 = new Chip8();
+chip8.loadProgram([0xa2, 0x00, 0xd0, 0x01]);
 
 function loop() {
     chip8.cycle();
-    console.log("hi");
 }
 
 function sendDebug() {
@@ -253,7 +253,7 @@ function sendDebug() {
 }
 
 function sendDisplay() {
-    postMessage([["display"], chip8.display]);
+    postMessage(["display", chip8.display]);
 }
 
 onmessage = function(event) { // expects array [command, args...]
@@ -261,10 +261,12 @@ onmessage = function(event) { // expects array [command, args...]
         case "startLoop":
             looping = true;
             loopInterval = setInterval(loop, 1);
+            postMessage([chip8.memory])
             break;
 
         case "stopLoop":
             looping = false;
+            clearInterval(loopInterval);
             break;
 
         case "step":
